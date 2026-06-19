@@ -337,3 +337,5 @@ for _, row in filtered.iterrows():
         if st.button("Delete", key=f"del_{row['id']}"):
             delete_trade(row["id"])
             st.rerun()
+
+#test
