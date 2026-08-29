@@ -1,8 +1,25 @@
 import streamlit as st
 from database.db import get_session
-from database.models import Symbol, TimeSlot, Approach, EntryModel
+from database.models import Symbol, TimeSlot, Approach, EntryModel, Settings
 
 # ── Helpers ──────────────────────────────────────────────────
+
+def load_setting(key, default=None):
+    db = get_session()
+    row = db.query(Settings).filter(Settings.key == key).first()
+    db.close()
+    return float(row.value) if row else default
+
+def save_setting(key, value):
+    db = get_session()
+    row = db.query(Settings).filter(Settings.key == key).first()
+    if row:
+        row.value = str(value)
+    else:
+        db.add(Settings(key=key, value=str(value)))
+    db.commit()
+    db.close()
+
 def load_symbols():
     db = get_session()
     rows = db.query(Symbol).order_by(Symbol.name).all()
@@ -102,6 +119,15 @@ def delete_entry_model(entry_model_id):
 # ── Page config ──────────────────────────────────────────────
 st.set_page_config(page_title="Setup", layout="wide")
 st.title("⚙️ Setup")
+
+st.subheader("Risk Settings")
+current_base_size = load_setting("base_size", default=0.01)
+new_base_size = st.number_input("Base Size", value=current_base_size, min_value=0.01, format="%.2f", step=0.01)
+if st.button("Save Base Size"):
+    save_setting("base_size", new_base_size)
+    st.success(f"Base size updated to {new_base_size}")
+
+st.divider()
 
 # ── Symbols ──────────────────────────────────────────────────
 st.subheader("Symbols")

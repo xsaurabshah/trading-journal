@@ -61,3 +61,8 @@ class EntryModel(Base):
     description = Column(Text)
     approach_name = Column(String, ForeignKey("approaches.name"))
     approach = relationship("Approach", back_populates="entry_models")
+
+class Settings(Base):
+    __tablename__="settings"
+    key = Column(String, primary_key=True)
+    value = Column(String)

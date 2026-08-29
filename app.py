@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from datetime import date, timedelta
 from database.db import get_session
-from database.models import Trade, Symbol, TimeSlot, Approach, EntryModel, Reflection
+from database.models import Trade, Symbol, TimeSlot, Approach, EntryModel, Reflection, Settings
 
 # ── DB helpers ───────────────────────────────────────────────
 def load_symbols():
@@ -93,7 +93,7 @@ def get_week_days(monday):
     return [monday + timedelta(days=i) for i in range(5)]
 
 # ── Volatility score ─────────────────────────────────────────
-def calc_volatility(week_df):
+def calc_volatility(week_df, base_size):
     if week_df.empty:
         return 0, 0
     score = 0
@@ -101,13 +101,20 @@ def calc_volatility(week_df):
         trade_count     = len(day_df)
         approaches_used = day_df["approach"].nunique()
         slots_used      = day_df["time_slot"].nunique()
-        oversized       = (day_df["size"] > 0.01).sum()
+        oversized       = (day_df["size"] > base_size).sum()
         score += max(0, trade_count - 1) * 3
         score += max(0, approaches_used - 1) * 3
         score += max(0, slots_used - 1) * 2
         score += oversized * 1
     max_possible = 5 * (3 + 3 + 2 + 1)
     return score, max_possible
+
+def load_setting(key, default=None):
+    db = get_session()
+    row = db.query(Settings).filter(Settings.key == key).first()
+    db.close()
+    return float(row.value) if row else default
+
 
 # ── Page config ──────────────────────────────────────────────
 st.set_page_config(page_title="Trading Journal", layout="wide")
@@ -154,7 +161,8 @@ left, right = st.columns(2)
 
 with left:
     st.markdown("**Volatility Score**")
-    score, max_possible = calc_volatility(week_df)
+    base_size = load_setting("base_size", default=0.01)
+    score, max_possible = calc_volatility(week_df, base_size)
     ratio     = score / max_possible if max_possible > 0 else 0
     threshold = 0.4
     bar_color  = "#22c55e" if ratio <= threshold else "#ef4444"
