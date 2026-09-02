@@ -142,7 +142,8 @@ with st.sidebar:
         time_to_tp = None
         time_to_sl = None
 
-    size = st.number_input("Size", min_value=0.01, format="%.2f")
+    base_size = load_setting("base_size", default=0.01)
+    size = st.number_input("Size", min_value=base_size, format="%.2f")
 
     if st.button("Add Trade", use_container_width=True):
         add_trade(trade_date, symbol, time_slot, approach, entry_model, r_gain, size, time_to_tp, time_to_sl)
